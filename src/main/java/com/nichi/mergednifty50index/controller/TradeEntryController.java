@@ -4,6 +4,7 @@ package com.nichi.mergednifty50index.controller;
 import com.nichi.mergednifty50index.DTO.ComboDataDTO;
 import com.nichi.mergednifty50index.database.pavan.dao.StockListDAO;
 import com.nichi.mergednifty50index.database.pavan.dao.TradeEntryDAO;
+import com.nichi.mergednifty50index.database.pavan.dao.TradeEntryHelper;
 import com.nichi.mergednifty50index.database.pavan.model.StocksList;
 import com.nichi.mergednifty50index.database.pavan.model.TradeList;
 import com.nichi.mergednifty50index.model.TableTradeEntry;
@@ -58,6 +59,7 @@ public class TradeEntryController {
     private ComboBox<String> filterComboBox;
 
 
+    private TradeEntryHelper deletedTrade;
 
     private final ObservableList<TableTradeEntry> tradeData = FXCollections.observableArrayList();
     private final FilteredList<TableTradeEntry> filteredData = new FilteredList<>(tradeData, p -> true);
@@ -326,7 +328,7 @@ public class TradeEntryController {
                 Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Deleted Selected row?", ButtonType.YES, ButtonType.NO);
                 alert.showAndWait().ifPresent(response -> {
                     if (response == ButtonType.YES){
-                        tradeEntryDAO.deleteTrade(selected.getTradeNo(), selected.getCode());
+                        deletedTrade = tradeEntryDAO.deleteTrade(selected.getTradeNo(), selected.getCode());
                         tradeData.remove(selected);
                     }
                 });
@@ -389,6 +391,12 @@ public class TradeEntryController {
                 datePicker.requestFocus();
             }
         });
+    }
+
+    @FXML
+    public void doUndo() {
+        TradeEntryDAO trade = new TradeEntryDAO();
+        trade.undoDelete(deletedTrade);
     }
 
     @FXML

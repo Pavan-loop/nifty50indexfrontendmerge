@@ -17,7 +17,7 @@ public class HelloController {
 
     @FXML
     public void initialize() {
-        handleTradeEntry();
+        handleTLClick();
     }
 
     @FXML

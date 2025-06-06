@@ -42,7 +42,7 @@ public class TradeEntryDAO {
         List<TradeList> tradeLists = null;
 
         try {
-            Query<TradeList> query = session.createQuery("FROM TradeList order by tradeNo asc", TradeList.class);
+            Query<TradeList> query = session.createQuery("FROM TradeList where isDeleted=0 order by tradeNo asc", TradeList.class);
             tradeLists = query.list();
         }catch (Exception e) {
             System.out.println(e.getMessage());
@@ -52,7 +52,7 @@ public class TradeEntryDAO {
         return tradeLists;
     }
 
-    public void deleteTrade(Integer tradeNo, String code) {
+    public TradeEntryHelper deleteTrade(Integer tradeNo, String code) {
         System.out.println(tradeNo + " " + code);
         Session session = HibernateUtils.getSessionFactory().openSession();
         Transaction transaction = null;
@@ -62,11 +62,32 @@ public class TradeEntryDAO {
 
             TradeListId tradeListId = new TradeListId(tradeNo, code);
             TradeList trade = session.get(TradeList.class, tradeListId);
+
             System.out.println("hehe boy");
 
             if (trade != null) {
-                session.remove(trade);
+                trade.setIsDeleted(1);
                 System.out.println("delete aythu");
+            }
+            transaction.commit();
+        }catch (Exception e) {
+            System.out.println(e.getMessage());
+        }finally {
+            session.close();
+        }
+        return new TradeEntryHelper(tradeNo, code);
+    }
+
+    public void undoDelete(TradeEntryHelper tradeIds) {
+        Session session = HibernateUtils.getSessionFactory().openSession();
+        Transaction transaction = null;
+
+        try {
+            transaction = session.beginTransaction();
+            TradeListId tradeListId = new TradeListId(tradeIds.getTradeNo(), tradeIds.getCode());
+            TradeList trade = session.get(TradeList.class, tradeListId);
+            if (trade != null) {
+                trade.setIsDeleted(0);
             }
             transaction.commit();
         }catch (Exception e) {

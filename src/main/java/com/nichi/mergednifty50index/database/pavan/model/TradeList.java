@@ -25,10 +25,25 @@ public class TradeList {
     private Integer quantity;
     @Column(name = "updatesource")
     private String updateSource;
-    @Column(name = "updatetime")
+    @Column(name = "updatetime", updatable = false)
     private String updateTime;
+    @Column(name = "isDeleted")
+    private Integer isDeleted = 0;
 
     public TradeList() {
+    }
+
+    public TradeList(Integer tradeNo, String code, String name, String tradeDate, String side, Double tradePrice, Integer quantity, String updateSource, String updateTime, Integer isDeleted) {
+        this.tradeNo = tradeNo;
+        this.code = code;
+        this.name = name;
+        this.tradeDate = tradeDate;
+        this.side = side;
+        this.tradePrice = tradePrice;
+        this.quantity = quantity;
+        this.updateSource = updateSource;
+        this.updateTime = updateTime;
+        this.isDeleted = isDeleted;
     }
 
     public TradeList(Integer tradeNo, String code, String name, String tradeDate, String side, Double tradePrice, Integer quantity, String updateSource, String updateTime) {
@@ -113,6 +128,14 @@ public class TradeList {
 
     public void setUpdateTime(String updateTime) {
         this.updateTime = updateTime;
+    }
+
+    public Integer getIsDeleted() {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted) {
+        this.isDeleted = isDeleted;
     }
 
     @Override
