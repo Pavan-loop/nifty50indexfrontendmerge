@@ -564,7 +564,7 @@ public class TradeEntryController {
     private void exportCSV(File file) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
 
-            bw.write("Trade No,Code,Name,TradeDate,Side,TradePrice,Quantity");
+            bw.write("Trade No,Code,Name,TradeDate,Side,TradePrice,Quantity,(0) Not Deleted (1) Deleted");
             bw.newLine();
 
             List<TradeEntryDTO> csvData = tradeData.stream()
@@ -575,7 +575,8 @@ public class TradeEntryController {
                                     trade.getTradeDate(),
                                     trade.getSide(),
                                     trade.getTradePrice(),
-                                    trade.getQuantity()
+                                    trade.getQuantity(),
+                                    trade.isIsDeleted() ? 1 : 0
                             )).toList();
 
             for (TradeEntryDTO data : csvData) {
@@ -586,7 +587,8 @@ public class TradeEntryController {
                             data.getTradeDate(),
                             data.getSide(),
                             String.valueOf(data.getTradePrice()),
-                            String.valueOf(data.getQuantity())
+                            String.valueOf(data.getQuantity()),
+                            String.valueOf(data.getIsDeleted())
                         );
                 bw.write(line);
                 bw.newLine();

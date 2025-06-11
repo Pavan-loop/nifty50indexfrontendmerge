@@ -4,6 +4,9 @@
 .sidebar{
     -fx-background-color: #2D3039;
 }
+.check-child {
+    -fx-background-color: red;
+}
 
 .main-heading{
     -fx-background-color: white;
