@@ -52,50 +52,47 @@ public class TradeEntryDAO {
         return tradeLists;
     }
 
-    public TradeEntryHelper deleteTrade(Integer tradeNo, String code) {
-        System.out.println(tradeNo + " " + code);
+    public List<TradeList> getAllTrades() {
         Session session = HibernateUtils.getSessionFactory().openSession();
-        Transaction transaction = null;
+        List<TradeList> tradeLists = null;
 
         try {
-            transaction = session.beginTransaction();
-
-            TradeListId tradeListId = new TradeListId(tradeNo, code);
-            TradeList trade = session.get(TradeList.class, tradeListId);
-
-            System.out.println("hehe boy");
-
-            if (trade != null) {
-                trade.setIsDeleted(1);
-                System.out.println("delete aythu");
-            }
-            transaction.commit();
+            Query<TradeList> query = session.createQuery("FROM TradeList where order by tradeNo asc", TradeList.class);
+            tradeLists = query.list();
         }catch (Exception e) {
             System.out.println(e.getMessage());
         }finally {
             session.close();
         }
-        return new TradeEntryHelper(tradeNo, code);
+        return tradeLists;
     }
 
-    public void undoDelete(TradeEntryHelper tradeIds) {
+    public void deleteTrade(List<TradeEntryHelper> deletedValues) {
         Session session = HibernateUtils.getSessionFactory().openSession();
         Transaction transaction = null;
 
         try {
-            transaction = session.beginTransaction();
-            TradeListId tradeListId = new TradeListId(tradeIds.getTradeNo(), tradeIds.getCode());
-            TradeList trade = session.get(TradeList.class, tradeListId);
-            if (trade != null) {
-                trade.setIsDeleted(0);
+
+
+            for (var data : deletedValues) {
+                transaction = session.beginTransaction();
+                TradeListId tradeListId = new TradeListId(data.getTradeNo(), data.getCode());
+                TradeList trade = session.get(TradeList.class, tradeListId);
+
+
+                if (trade != null) {
+                    trade.setIsDeleted(1);
+                    System.out.println("delete aythu");
+                }
+                transaction.commit();
             }
-            transaction.commit();
         }catch (Exception e) {
             System.out.println(e.getMessage());
         }finally {
             session.close();
         }
     }
+
 
     public List<ComboDataDTO> getCodeData() {
         Session session = HibernateUtils.getSessionFactory().openSession();

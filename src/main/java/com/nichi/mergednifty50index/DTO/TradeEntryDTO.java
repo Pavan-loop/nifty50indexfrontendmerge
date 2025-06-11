@@ -6,10 +6,10 @@ public class TradeEntryDTO {
     private String name;
     private String tradeDate;
     private String side;
-    private Integer tradePrice;
+    private Double tradePrice;
     private Integer quantity;
 
-    public TradeEntryDTO(Integer tradeNo, String code, String name, String tradeDate, String side, Integer tradePrice, Integer quantity) {
+    public TradeEntryDTO(Integer tradeNo, String code, String name, String tradeDate, String side, Double tradePrice, Integer quantity) {
         this.tradeNo = tradeNo;
         this.code = code;
         this.name = name;
@@ -59,11 +59,11 @@ public class TradeEntryDTO {
         this.side = side;
     }
 
-    public Integer getTradePrice() {
+    public Double getTradePrice() {
         return tradePrice;
     }
 
-    public void setTradePrice(Integer tradePrice) {
+    public void setTradePrice(Double tradePrice) {
         this.tradePrice = tradePrice;
     }
 

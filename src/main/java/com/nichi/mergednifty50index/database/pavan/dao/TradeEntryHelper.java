@@ -27,4 +27,12 @@ public class TradeEntryHelper {
     public void setCode(String code) {
         this.code = code;
     }
+
+    @Override
+    public String toString() {
+        return "TradeEntryHelper{" +
+                "tradeNo=" + tradeNo +
+                ", code='" + code + '\'' +
+                '}';
+    }
 }

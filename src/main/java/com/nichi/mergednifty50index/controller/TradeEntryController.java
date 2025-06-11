@@ -1,7 +1,7 @@
 package com.nichi.mergednifty50index.controller;
 
 
-import com.nichi.mergednifty50index.DTO.ComboDataDTO;
+import com.nichi.mergednifty50index.DTO.TradeEntryDTO;
 import com.nichi.mergednifty50index.database.pavan.dao.StockListDAO;
 import com.nichi.mergednifty50index.database.pavan.dao.TradeEntryDAO;
 import com.nichi.mergednifty50index.database.pavan.dao.TradeEntryHelper;
@@ -15,17 +15,24 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.Cursor;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.ComboBoxTableCell;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.stage.FileChooser;
 import javafx.util.Callback;
 import javafx.util.converter.DoubleStringConverter;
 import javafx.util.converter.IntegerStringConverter;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.Date;
@@ -54,15 +61,23 @@ public class TradeEntryController {
     private TableColumn<TableTradeEntry, Double> colTradePrice;
     @FXML
     private TableColumn<TableTradeEntry, Integer> colQuantity;
+    @FXML
+    private TableColumn<TableTradeEntry, Boolean> colCheck;
 
     @FXML
     private ComboBox<String> filterComboBox;
 
+    @FXML
+    private CheckBox myCheckBox;
 
-    private TradeEntryHelper deletedTrade;
+    @FXML
+    private Button exportbtn;
+
+
 
     private final ObservableList<TableTradeEntry> tradeData = FXCollections.observableArrayList();
     private final FilteredList<TableTradeEntry> filteredData = new FilteredList<>(tradeData, p -> true);
+
 
     @FXML
     public void initialize() throws Exception {
@@ -290,7 +305,7 @@ public class TradeEntryController {
                     .orElse(0);
             int nextTradeNo = maxTradeNo + 1;
 
-            TableTradeEntry newEntry = new TableTradeEntry(nextTradeNo, "", "", "", "", 0.0, 0);
+            TableTradeEntry newEntry = new TableTradeEntry(nextTradeNo, "", "", "", "", 0.0, 0, false);
             tradeData.add(newEntry);
             int newIndex = tradeData.size() - 1;
             tableTradeEntry.scrollTo(newIndex);
@@ -328,7 +343,7 @@ public class TradeEntryController {
                 Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Deleted Selected row?", ButtonType.YES, ButtonType.NO);
                 alert.showAndWait().ifPresent(response -> {
                     if (response == ButtonType.YES){
-                        deletedTrade = tradeEntryDAO.deleteTrade(selected.getTradeNo(), selected.getCode());
+//                        deletedTrade = tradeEntryDAO.deleteTrade(selected.getTradeNo(), selected.getCode());
                         tradeData.remove(selected);
                     }
                 });
@@ -391,16 +406,15 @@ public class TradeEntryController {
                 datePicker.requestFocus();
             }
         });
+
+        colCheck.setCellValueFactory(cellData -> cellData.getValue().isDeletedProperty());
+        colCheck.setCellFactory(CheckBoxTableCell.forTableColumn(colCheck));
+
     }
 
-    @FXML
-    public void doUndo() {
-        TradeEntryDAO trade = new TradeEntryDAO();
-        trade.undoDelete(deletedTrade);
-    }
 
     @FXML
-    public void OnClickSave() {
+    public void OnClickSave(ActionEvent event) {
 
         for (TableTradeEntry entry : tradeData) {
             if (!isValid(entry)){
@@ -424,9 +438,17 @@ public class TradeEntryController {
         TradeEntryDAO tradeEntryDAO = new TradeEntryDAO();
         tradeEntryDAO.saveAll(trade);
 
-        for( var v : trade) {
-            System.out.println(v);
-        }
+        List<TradeEntryHelper> selected = tradeData.stream()
+                        .filter(TableTradeEntry::isIsDeleted)
+                                .map(p -> new TradeEntryHelper(p.getTradeNo(), p.getCode()))
+                                        .toList();
+
+        tradeEntryDAO.deleteTrade(selected);
+
+        System.out.println(selected);
+        myCheckBox.setText("unHide");
+        myCheckBox.setSelected(false);
+
         OnClickLoad();
     }
 
@@ -445,17 +467,139 @@ public class TradeEntryController {
                     trade.getTradeDate(),
                     trade.getSide(),
                     trade.getTradePrice(),
-                    trade.getQuantity()
+                    trade.getQuantity(),
+                    false
             );
             tradeData.add(entry);
         }
+        myCheckBox.setText("unHide");
+        myCheckBox.setSelected(false);
         filterComboBox.setValue("All");
 
-        List<ComboDataDTO> value = tradeEntryDAO.getCodeData();
-        for (var v : value) {
-            System.out.println(v);
+    }
+
+    @FXML
+    public void onClickHideAndUnhide(ActionEvent event) {
+        TradeEntryDAO tradeEntryDAO = new TradeEntryDAO();
+        if (myCheckBox.isSelected()) {
+            List<TradeList> tradeLists = tradeEntryDAO.getAllTrades();
+            tradeData.clear();
+            for (var trade : tradeLists) {
+                if (trade.getIsDeleted() == 1) {
+                    TableTradeEntry tradeEntry = new TableTradeEntry(
+                            trade.getTradeNo(),
+                            trade.getCode(),
+                            trade.getName(),
+                            trade.getTradeDate(),
+                            trade.getSide(),
+                            trade.getTradePrice(),
+                            trade.getQuantity(),
+                            true
+                    );
+                    tradeData.add(tradeEntry);
+                } else if (trade.getIsDeleted() == 0) {
+                    TableTradeEntry tradeEntry = new TableTradeEntry(
+                            trade.getTradeNo(),
+                            trade.getCode(),
+                            trade.getName(),
+                            trade.getTradeDate(),
+                            trade.getSide(),
+                            trade.getTradePrice(),
+                            trade.getQuantity(),
+                            false
+                    );
+                    tradeData.add(tradeEntry);
+
+                }
+            }
+            myCheckBox.setText("hide");
+        } else {
+           List<TradeList> tradeLists = tradeEntryDAO.getAllTradeList();
+           tradeData.clear();
+           for (var trade : tradeLists) {
+               TableTradeEntry tradeEntry = new TableTradeEntry(
+                       trade.getTradeNo(),
+                       trade.getCode(),
+                       trade.getName(),
+                       trade.getTradeDate(),
+                       trade.getSide(),
+                       trade.getTradePrice(),
+                       trade.getQuantity(),
+                       false
+               );
+               tradeData.add(tradeEntry);
+           }
+            myCheckBox.setText("unHide");
         }
     }
+
+    @FXML
+    protected void OnExport() {
+
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Export CSV");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV Files", "*.csv"));
+
+        fileChooser.setInitialFileName("stocks_" + getDateTime().substring(0,9) + ".csv");
+
+
+
+        if (myCheckBox.isSelected()) {
+            fileChooser.setInitialFileName("all_stocks_" + getDateTime().substring(0,9) + ".csv");
+            File file = fileChooser.showSaveDialog(exportbtn.getScene().getWindow());
+            if (file != null) {
+                exportCSV(file);
+            }
+        }else {
+            fileChooser.setInitialFileName("stocks_" + getDateTime().substring(0,9) + ".csv");
+            File file = fileChooser.showSaveDialog(exportbtn.getScene().getWindow());
+            if (file != null) {
+                exportCSV(file);
+            }
+        }
+
+    }
+
+    private void exportCSV(File file) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
+
+            bw.write("Trade No,Code,Name,TradeDate,Side,TradePrice,Quantity");
+            bw.newLine();
+
+            List<TradeEntryDTO> csvData = tradeData.stream()
+                            .map(trade -> new TradeEntryDTO(
+                                    trade.getTradeNo(),
+                                    trade.getCode(),
+                                    trade.getName(),
+                                    trade.getTradeDate(),
+                                    trade.getSide(),
+                                    trade.getTradePrice(),
+                                    trade.getQuantity()
+                            )).toList();
+
+            for (TradeEntryDTO data : csvData) {
+                String line = String.join(",",
+                            String.valueOf(data.getTradeNo()),
+                            data.getCode(),
+                            data.getName(),
+                            data.getTradeDate(),
+                            data.getSide(),
+                            String.valueOf(data.getTradePrice()),
+                            String.valueOf(data.getQuantity())
+                        );
+                bw.write(line);
+                bw.newLine();
+            }
+
+            showAlert("CSV Exported Successfully: " + file.getAbsolutePath());
+
+        } catch (IOException e) {
+            showAlert("Error exporting CSV: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
 
     private String getDateTime() {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd HH:mm:ss");
@@ -489,5 +633,12 @@ public class TradeEntryController {
             return false;
         }
         return true;
+    }
+    private void showAlert(String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Export Status");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 }
