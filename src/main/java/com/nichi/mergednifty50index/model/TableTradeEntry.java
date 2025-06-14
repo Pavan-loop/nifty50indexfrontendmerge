@@ -1,8 +1,12 @@
 package com.nichi.mergednifty50index.model;
 
+import com.nichi.mergednifty50index.database.pavan.dao.TradeEntryHelper;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
+
+import java.util.List;
 
 public class TableTradeEntry {
     private SimpleIntegerProperty tradeNo;
@@ -12,13 +16,14 @@ public class TableTradeEntry {
     private SimpleStringProperty side;
     private SimpleDoubleProperty tradePrice;
     private SimpleIntegerProperty quantity;
+    private SimpleBooleanProperty isDeleted;
 
     private boolean modifiedTradePrice = false;
     private boolean modifiedQuantity = false;
     private boolean modifiedSide = false;
     private boolean modifiedTradeCode = false;
 
-    public TableTradeEntry(Integer tradeNo, String code, String name, String tradeDate, String side, Double tradePrice, Integer quantity) {
+    public TableTradeEntry(Integer tradeNo, String code, String name, String tradeDate, String side, Double tradePrice, Integer quantity, Boolean isDeleted) {
         this.tradeNo = new SimpleIntegerProperty(tradeNo);
         this.code = new SimpleStringProperty(code);
         this.name = new SimpleStringProperty(name);
@@ -26,6 +31,7 @@ public class TableTradeEntry {
         this.side = new SimpleStringProperty(side);
         this.tradePrice = new SimpleDoubleProperty(tradePrice);
         this.quantity = new SimpleIntegerProperty(quantity);
+        this.isDeleted = new SimpleBooleanProperty(isDeleted);
     }
 
     public Integer getTradeNo() {
@@ -142,6 +148,18 @@ public class TableTradeEntry {
 
     public void setModifiedTradeCode(boolean modifiedTradeCode) {
         this.modifiedTradeCode = modifiedTradeCode;
+    }
+
+    public boolean isIsDeleted() {
+        return isDeleted.get();
+    }
+
+    public SimpleBooleanProperty isDeletedProperty() {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(boolean isDeleted) {
+        this.isDeleted.set(isDeleted);
     }
 
     @Override

@@ -6,10 +6,11 @@ public class TradeEntryDTO {
     private String name;
     private String tradeDate;
     private String side;
-    private Integer tradePrice;
+    private Double tradePrice;
     private Integer quantity;
+    private Integer isDeleted;
 
-    public TradeEntryDTO(Integer tradeNo, String code, String name, String tradeDate, String side, Integer tradePrice, Integer quantity) {
+    public TradeEntryDTO(Integer tradeNo, String code, String name, String tradeDate, String side, Double tradePrice, Integer quantity, Integer isDeleted) {
         this.tradeNo = tradeNo;
         this.code = code;
         this.name = name;
@@ -17,6 +18,7 @@ public class TradeEntryDTO {
         this.side = side;
         this.tradePrice = tradePrice;
         this.quantity = quantity;
+        this.isDeleted = isDeleted;
     }
 
     public Integer getTradeNo() {
@@ -59,11 +61,11 @@ public class TradeEntryDTO {
         this.side = side;
     }
 
-    public Integer getTradePrice() {
+    public Double getTradePrice() {
         return tradePrice;
     }
 
-    public void setTradePrice(Integer tradePrice) {
+    public void setTradePrice(Double tradePrice) {
         this.tradePrice = tradePrice;
     }
 
@@ -73,6 +75,14 @@ public class TradeEntryDTO {
 
     public void setQuantity(Integer quantity) {
         this.quantity = quantity;
+    }
+
+    public Integer getIsDeleted() {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted) {
+        this.isDeleted = isDeleted;
     }
 
     @Override

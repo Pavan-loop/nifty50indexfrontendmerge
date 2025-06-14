@@ -8,7 +8,7 @@
 
 <AnchorPane prefHeight="454.0" prefWidth="950.0" styleClass="table-tl-parent" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.nichi.mergednifty50index.controller.TLViewController">
     <children>
-        <TableView fx:id="tableTL" layoutY="72.0" prefHeight="386.0" prefWidth="950.0" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="68.0">
+        <TableView fx:id="tableTL" layoutY="72.0" prefHeight="386.0" prefWidth="950.0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0">
             <columns>
                 <TableColumn fx:id="colStocks" text="Stocks" />
                 <TableColumn fx:id="colName" text="Name" />
@@ -24,8 +24,8 @@
                 <TableColumn fx:id="colTradePL" text="TradePL" />
             </columns>
         </TableView>
-      <DatePicker fx:id="tradeDatePicker" layoutX="25.0" layoutY="27.0" prefWidth="150.0" AnchorPane.bottomAnchor="409.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="801.0" AnchorPane.topAnchor="22.0" />
-      <Button onAction="#onLoadButtonClick" layoutX="743.0" layoutY="34.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="81.0" styleClass="btnloadandsave" stylesheets="@../../../css/stylesheet.css" text="Load" AnchorPane.bottomAnchor="410.0" AnchorPane.leftAnchor="765.0" AnchorPane.rightAnchor="105.0" AnchorPane.topAnchor="23.0" />
-      <Button layoutX="855.0" layoutY="34.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="81.0" styleClass="btnloadandsave" stylesheets="@../../../css/stylesheet.css" text="Save" AnchorPane.bottomAnchor="410.0" AnchorPane.leftAnchor="870.0" AnchorPane.topAnchor="23.0" />
+      <DatePicker fx:id="tradeDatePicker" layoutX="25.0" layoutY="27.0" prefWidth="150.0" AnchorPane.leftAnchor="0.0" />
+      <Button layoutX="762.0" layoutY="23.0" mnemonicParsing="false" onAction="#onLoadButtonClick" prefHeight="25.0" prefWidth="81.0" styleClass="btnloadandsave" stylesheets="@../../../css/stylesheet.css" text="Load" AnchorPane.rightAnchor="107.0" />
+      <Button layoutX="855.0" layoutY="23.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="81.0" styleClass="btnloadandsave" stylesheets="@../../../css/stylesheet.css" text="Save" AnchorPane.rightAnchor="14.0" />
     </children>
 </AnchorPane>

@@ -1,13 +1,16 @@
 package com.nichi.mergednifty50index.controller;
 
 
-import com.nichi.mergednifty50index.DTO.ComboDataDTO;
+import com.nichi.mergednifty50index.DTO.MinMaxBound;
+import com.nichi.mergednifty50index.DTO.TradeEntryDTO;
 import com.nichi.mergednifty50index.database.pavan.dao.StockListDAO;
 import com.nichi.mergednifty50index.database.pavan.dao.TradeEntryDAO;
 import com.nichi.mergednifty50index.database.pavan.dao.TradeEntryHelper;
 import com.nichi.mergednifty50index.database.pavan.model.StocksList;
 import com.nichi.mergednifty50index.database.pavan.model.TradeList;
 import com.nichi.mergednifty50index.model.TableTradeEntry;
+//import com.nichi.mergednifty50index.toaster.Toast;
+import com.nichi.mergednifty50index.toaster.Toast;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -15,22 +18,27 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.Cursor;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.ComboBoxTableCell;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.stage.FileChooser;
 import javafx.util.Callback;
 import javafx.util.converter.DoubleStringConverter;
 import javafx.util.converter.IntegerStringConverter;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class TradeEntryController {
@@ -54,15 +62,26 @@ public class TradeEntryController {
     private TableColumn<TableTradeEntry, Double> colTradePrice;
     @FXML
     private TableColumn<TableTradeEntry, Integer> colQuantity;
+    @FXML
+    private TableColumn<TableTradeEntry, Boolean> colCheck;
 
     @FXML
     private ComboBox<String> filterComboBox;
 
+    @FXML
+    private CheckBox myCheckBox;
 
-    private TradeEntryHelper deletedTrade;
+    @FXML
+    private Button exportbtn;
+
+
 
     private final ObservableList<TableTradeEntry> tradeData = FXCollections.observableArrayList();
     private final FilteredList<TableTradeEntry> filteredData = new FilteredList<>(tradeData, p -> true);
+    MinMaxBound bounds;
+    String selectedCopy;
+    Integer tradeNo;
+
 
     @FXML
     public void initialize() throws Exception {
@@ -121,10 +140,13 @@ public class TradeEntryController {
             String oldRow = event.getOldValue();
             String selectedRow = event.getNewValue();
 
+
             if (!oldRow.equals(selectedRow) && !oldRow.isEmpty()) {
                 row.setCode(selectedRow);
                 row.setModifiedTradeCode(true);
                 String name = codeToName.getOrDefault(selectedRow, "");
+                Tooltip tooltip = new Tooltip("Hello");
+
                 row.setName(name);
                 tableTradeEntry.refresh();
             } else if (oldRow.isEmpty()) {
@@ -133,6 +155,9 @@ public class TradeEntryController {
                 row.setName(name);
                 tableTradeEntry.refresh();
             }
+            selectedCopy = selectedRow;
+            bounds = tradeEntryDAO.getMinMaxValue(selectedRow, getDateTime().substring(0,8));
+            Toast.show(tableTradeEntry, "The min and max value of " + selectedRow + " is " + bounds.getLowerBond()  + " to " + bounds.getHigherBond(), 2000);
         });
 
         colName.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getName()));
@@ -196,6 +221,10 @@ public class TradeEntryController {
             cell.itemProperty().addListener((obs, oldItem, newItem) -> {
                 try {
                     TableTradeEntry trade = cell.getTableRow().getItem();
+                    if (bounds != null && selectedCopy != null) {
+                        Tooltip tooltip = new Tooltip(bounds.getLowerBond() + " - " + bounds.getHigherBond());
+                        cell.setTooltip(tooltip);
+                    }
                     if (trade != null && trade.isModifiedTradePrice()) {
                         cell.setStyle("-fx-background-color: #ffdfd5; -fx-text-fill: black; -fx-border-color: red;");
                     }else {
@@ -289,8 +318,9 @@ public class TradeEntryController {
                     .max()
                     .orElse(0);
             int nextTradeNo = maxTradeNo + 1;
+            tradeNo = nextTradeNo;
 
-            TableTradeEntry newEntry = new TableTradeEntry(nextTradeNo, "", "", "", "", 0.0, 0);
+            TableTradeEntry newEntry = new TableTradeEntry(nextTradeNo, "", "", "", "", 0.0, 0, false);
             tradeData.add(newEntry);
             int newIndex = tradeData.size() - 1;
             tableTradeEntry.scrollTo(newIndex);
@@ -328,7 +358,7 @@ public class TradeEntryController {
                 Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Deleted Selected row?", ButtonType.YES, ButtonType.NO);
                 alert.showAndWait().ifPresent(response -> {
                     if (response == ButtonType.YES){
-                        deletedTrade = tradeEntryDAO.deleteTrade(selected.getTradeNo(), selected.getCode());
+                        tradeEntryDAO.deleteTrade(selected.getTradeNo(), selected.getCode());
                         tradeData.remove(selected);
                     }
                 });
@@ -391,22 +421,31 @@ public class TradeEntryController {
                 datePicker.requestFocus();
             }
         });
+
+        colCheck.setCellValueFactory(cellData -> cellData.getValue().isDeletedProperty());
+        colCheck.setCellFactory(CheckBoxTableCell.forTableColumn(colCheck));
+
     }
 
-    @FXML
-    public void doUndo() {
-        TradeEntryDAO trade = new TradeEntryDAO();
-        trade.undoDelete(deletedTrade);
-    }
 
     @FXML
-    public void OnClickSave() {
+    public void OnClickSave(ActionEvent event) {
 
         for (TableTradeEntry entry : tradeData) {
             if (!isValid(entry)){
                 return;
             }
         }
+        Optional<TableTradeEntry> result = tradeData.stream()
+                .filter(b -> Objects.equals(b.getCode(), selectedCopy) && Objects.equals(b.getTradeNo(), tradeNo))
+                .findFirst();
+
+        if (result.isPresent()) {
+            if (!isValids(result.get())){
+                return;
+            }
+        }
+
         List<TradeList> trade = tradeData.stream()
                 .map(entry -> new TradeList(
                         entry.getTradeNo(),
@@ -424,9 +463,17 @@ public class TradeEntryController {
         TradeEntryDAO tradeEntryDAO = new TradeEntryDAO();
         tradeEntryDAO.saveAll(trade);
 
-        for( var v : trade) {
-            System.out.println(v);
-        }
+        List<TradeEntryHelper> selected = tradeData.stream()
+                        .filter(TableTradeEntry::isIsDeleted)
+                                .map(p -> new TradeEntryHelper(p.getTradeNo(), p.getCode()))
+                                        .toList();
+
+        tradeEntryDAO.deleteTrade(selected);
+
+        System.out.println(selected);
+        myCheckBox.setText("unHide");
+        myCheckBox.setSelected(false);
+
         OnClickLoad();
     }
 
@@ -445,17 +492,143 @@ public class TradeEntryController {
                     trade.getTradeDate(),
                     trade.getSide(),
                     trade.getTradePrice(),
-                    trade.getQuantity()
+                    trade.getQuantity(),
+                    false
             );
             tradeData.add(entry);
         }
+        myCheckBox.setText("unHide");
+        myCheckBox.setSelected(false);
         filterComboBox.setValue("All");
 
-        List<ComboDataDTO> value = tradeEntryDAO.getCodeData();
-        for (var v : value) {
-            System.out.println(v);
+        tradeEntryDAO.getMinMaxValue("AXISBANK", "20250611");
+
+    }
+
+    @FXML
+    public void onClickHideAndUnhide(ActionEvent event) {
+        TradeEntryDAO tradeEntryDAO = new TradeEntryDAO();
+        if (myCheckBox.isSelected()) {
+            List<TradeList> tradeLists = tradeEntryDAO.getAllTrades();
+            tradeData.clear();
+            for (var trade : tradeLists) {
+                if (trade.getIsDeleted() == 1) {
+                    TableTradeEntry tradeEntry = new TableTradeEntry(
+                            trade.getTradeNo(),
+                            trade.getCode(),
+                            trade.getName(),
+                            trade.getTradeDate(),
+                            trade.getSide(),
+                            trade.getTradePrice(),
+                            trade.getQuantity(),
+                            true
+                    );
+                    tradeData.add(tradeEntry);
+                } else if (trade.getIsDeleted() == 0) {
+                    TableTradeEntry tradeEntry = new TableTradeEntry(
+                            trade.getTradeNo(),
+                            trade.getCode(),
+                            trade.getName(),
+                            trade.getTradeDate(),
+                            trade.getSide(),
+                            trade.getTradePrice(),
+                            trade.getQuantity(),
+                            false
+                    );
+                    tradeData.add(tradeEntry);
+
+                }
+            }
+            myCheckBox.setText("hide");
+        } else {
+           List<TradeList> tradeLists = tradeEntryDAO.getAllTradeList();
+           tradeData.clear();
+           for (var trade : tradeLists) {
+               TableTradeEntry tradeEntry = new TableTradeEntry(
+                       trade.getTradeNo(),
+                       trade.getCode(),
+                       trade.getName(),
+                       trade.getTradeDate(),
+                       trade.getSide(),
+                       trade.getTradePrice(),
+                       trade.getQuantity(),
+                       false
+               );
+               tradeData.add(tradeEntry);
+           }
+            myCheckBox.setText("unHide");
         }
     }
+
+    @FXML
+    protected void OnExport() {
+
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Export CSV");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV Files", "*.csv"));
+
+        fileChooser.setInitialFileName("stocks_" + getDateTime().substring(0,9) + ".csv");
+
+
+
+        if (myCheckBox.isSelected()) {
+            fileChooser.setInitialFileName("all_stocks_" + getDateTime().substring(0,9) + ".csv");
+            File file = fileChooser.showSaveDialog(exportbtn.getScene().getWindow());
+            if (file != null) {
+                exportCSV(file);
+            }
+        }else {
+            fileChooser.setInitialFileName("stocks_" + getDateTime().substring(0,9) + ".csv");
+            File file = fileChooser.showSaveDialog(exportbtn.getScene().getWindow());
+            if (file != null) {
+                exportCSV(file);
+            }
+        }
+
+    }
+
+    private void exportCSV(File file) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
+
+            bw.write("Trade No,Code,Name,TradeDate,Side,TradePrice,Quantity,(0) Not Deleted (1) Deleted");
+            bw.newLine();
+
+            List<TradeEntryDTO> csvData = tradeData.stream()
+                            .map(trade -> new TradeEntryDTO(
+                                    trade.getTradeNo(),
+                                    trade.getCode(),
+                                    trade.getName(),
+                                    trade.getTradeDate(),
+                                    trade.getSide(),
+                                    trade.getTradePrice(),
+                                    trade.getQuantity(),
+                                    trade.isIsDeleted() ? 1 : 0
+                            )).toList();
+
+            for (TradeEntryDTO data : csvData) {
+                String line = String.join(",",
+                            String.valueOf(data.getTradeNo()),
+                            data.getCode(),
+                            data.getName(),
+                            data.getTradeDate(),
+                            data.getSide(),
+                            String.valueOf(data.getTradePrice()),
+                            String.valueOf(data.getQuantity()),
+                            String.valueOf(data.getIsDeleted())
+                        );
+                bw.write(line);
+                bw.newLine();
+            }
+
+            showAlert("CSV Exported Successfully: " + file.getAbsolutePath());
+
+        } catch (IOException e) {
+            showAlert("Error exporting CSV: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
 
     private String getDateTime() {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd HH:mm:ss");
@@ -477,9 +650,9 @@ public class TradeEntryController {
         if (entry.getTradePrice() <= 0) {
             error.append("Trade Price : Enter a valid Trade price \n");
         }
-        if (entry.getQuantity() <= 0) {
-            error.append("Trade Quantity : Enter a valid Quantity \n");
-        }
+//        if (entry.getQuantity() <= 0) {
+//            error.append("Trade Quantity : Enter a valid Quantity \n");
+//        }
         if (!error.isEmpty()) {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Validation Error");
@@ -489,5 +662,47 @@ public class TradeEntryController {
             return false;
         }
         return true;
+    }
+
+    private boolean isValids(TableTradeEntry comp) {
+        try {
+            if (comp.getTradePrice() < bounds.getLowerBond() || comp.getTradePrice() > bounds.getHigherBond()) {
+                showAlert("The min and max value of " + selectedCopy + "should be " + bounds.getLowerBond() + " to " + bounds.getHigherBond());
+                colTradePrice.setCellFactory(column -> new TextFieldTableCell<TableTradeEntry, Double>(new DoubleStringConverter()) {
+                    @Override
+                    public void updateItem(Double item, boolean empty) {
+                        super.updateItem(item, empty);
+                        if (empty || item == null) {
+                            setText(null);
+                            setStyle("");
+                        } else {
+                            setText(String.valueOf(item));
+                            TableTradeEntry trade = getTableRow().getItem();
+                            if (item < bounds.getLowerBond() || item > bounds.getHigherBond()) {
+                                if (trade.getTradeNo() == comp.getTradeNo()) {
+                                    System.out.println("Inside: " + trade.getTradeNo());
+                                    System.out.println("Inside: " + comp.getTradeNo());
+                                    setStyle("-fx-background-color: #efde91; -fx-border-color: yellow; -dx-text-fill: black;");
+                                }
+                            } else {
+                                setStyle("");
+                            }
+                        }
+                    }
+                });
+                return false;
+            }
+        }catch (Exception e) {
+            System.out.println(e.getMessage());
+
+        }
+        return true;
+    }
+    private void showAlert(String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Export Status");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 }

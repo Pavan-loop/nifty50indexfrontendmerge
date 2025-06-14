@@ -1,6 +1,7 @@
 package com.nichi.mergednifty50index.database.pavan.dao;
 
 import com.nichi.mergednifty50index.DTO.ComboDataDTO;
+import com.nichi.mergednifty50index.DTO.MinMaxBound;
 import com.nichi.mergednifty50index.database.pavan.model.TradeList;
 import com.nichi.mergednifty50index.database.pavan.model.StocksList;
 import com.nichi.mergednifty50index.database.pavan.utils.HibernateUtils;
@@ -10,6 +11,7 @@ import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class TradeEntryDAO {
@@ -52,22 +54,31 @@ public class TradeEntryDAO {
         return tradeLists;
     }
 
-    public TradeEntryHelper deleteTrade(Integer tradeNo, String code) {
-        System.out.println(tradeNo + " " + code);
+    public List<TradeList> getAllTrades() {
         Session session = HibernateUtils.getSessionFactory().openSession();
-        Transaction transaction = null;
+        List<TradeList> tradeLists = null;
 
         try {
-            transaction = session.beginTransaction();
+            Query<TradeList> query = session.createQuery("FROM TradeList where order by tradeNo asc", TradeList.class);
+            tradeLists = query.list();
+        }catch (Exception e) {
+            System.out.println(e.getMessage());
+        }finally {
+            session.close();
+        }
+        return tradeLists;
+    }
 
+    public void deleteTrade(Integer tradeNo, String code) {
+        Session session = HibernateUtils.getSessionFactory().openSession();
+        Transaction transaction = null;
+        try {
+            transaction = session.beginTransaction();
             TradeListId tradeListId = new TradeListId(tradeNo, code);
-            TradeList trade = session.get(TradeList.class, tradeListId);
+            TradeList tradeList = session.get(TradeList.class, tradeListId);
 
-            System.out.println("hehe boy");
-
-            if (trade != null) {
-                trade.setIsDeleted(1);
-                System.out.println("delete aythu");
+            if (tradeList != null) {
+                session.remove(tradeList);
             }
             transaction.commit();
         }catch (Exception e) {
@@ -75,27 +86,34 @@ public class TradeEntryDAO {
         }finally {
             session.close();
         }
-        return new TradeEntryHelper(tradeNo, code);
     }
 
-    public void undoDelete(TradeEntryHelper tradeIds) {
+    public void deleteTrade(List<TradeEntryHelper> deletedValues) {
         Session session = HibernateUtils.getSessionFactory().openSession();
         Transaction transaction = null;
 
         try {
-            transaction = session.beginTransaction();
-            TradeListId tradeListId = new TradeListId(tradeIds.getTradeNo(), tradeIds.getCode());
-            TradeList trade = session.get(TradeList.class, tradeListId);
-            if (trade != null) {
-                trade.setIsDeleted(0);
+
+
+            for (var data : deletedValues) {
+                transaction = session.beginTransaction();
+                TradeListId tradeListId = new TradeListId(data.getTradeNo(), data.getCode());
+                TradeList trade = session.get(TradeList.class, tradeListId);
+
+
+                if (trade != null) {
+                    trade.setIsDeleted(1);
+                    System.out.println("delete aythu");
+                }
+                transaction.commit();
             }
-            transaction.commit();
         }catch (Exception e) {
             System.out.println(e.getMessage());
         }finally {
             session.close();
         }
     }
+
 
     public List<ComboDataDTO> getCodeData() {
         Session session = HibernateUtils.getSessionFactory().openSession();
@@ -113,4 +131,22 @@ public class TradeEntryDAO {
         }
         return combo;
     }
+
+    public MinMaxBound getMinMaxValue(String code, String date) {
+        Session session = HibernateUtils.getSessionFactory().openSession();
+        String selectMinMixValue = "SELECT lowerband, upperband from stockspricelist where code='" + code +"' and dt='" + date +"';";
+        try {
+            Object[] boundsValues = (Object[]) session.createNativeQuery(selectMinMixValue).getSingleResult();
+               double min = ((Number) boundsValues[0]).doubleValue();
+               double max = ((Number) boundsValues[1]).doubleValue();
+               return new MinMaxBound(min, max);
+        }catch (Exception e) {
+            System.out.println(e.getMessage());
+        }finally {
+            session.close();
+        }
+        return null;
+    }
+
+
 }

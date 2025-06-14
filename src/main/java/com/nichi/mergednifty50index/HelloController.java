@@ -45,6 +45,10 @@ public class HelloController {
         try {
             Node node = FXMLLoader.load(getClass().getResource(fxmlPath));
             contentArea.getChildren().setAll(node);
+            AnchorPane.setTopAnchor(node, 0.0);
+            AnchorPane.setBottomAnchor(node, 0.0);
+            AnchorPane.setRightAnchor(node, 0.0);
+            AnchorPane.setLeftAnchor(node, 0.0);
         }catch (Exception e) {
             e.printStackTrace();
         }
