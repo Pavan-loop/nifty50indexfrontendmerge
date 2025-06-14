@@ -9,7 +9,7 @@
 
 <AnchorPane prefHeight="580.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.nichi.mergednifty50index.controller.TradeEntryController">
     <children>
-        <TableView fx:id="tableTradeEntry" layoutY="68.0" prefHeight="386.0" prefWidth="950.0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0">
+        <TableView fx:id="tableTradeEntry" layoutY="68.0" prefHeight="477.0" prefWidth="950.0" AnchorPane.bottomAnchor="35.0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="68.0">
             <columns>
                 <TableColumn fx:id="colTradeNo" text="Trade No" />
                 <TableColumn fx:id="colCode" text="Code" />

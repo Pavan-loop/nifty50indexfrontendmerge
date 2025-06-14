@@ -1,6 +1,7 @@
 package com.nichi.mergednifty50index.database.pavan.dao;
 
 import com.nichi.mergednifty50index.DTO.ComboDataDTO;
+import com.nichi.mergednifty50index.DTO.MinMaxBound;
 import com.nichi.mergednifty50index.database.pavan.model.TradeList;
 import com.nichi.mergednifty50index.database.pavan.model.StocksList;
 import com.nichi.mergednifty50index.database.pavan.utils.HibernateUtils;
@@ -10,6 +11,7 @@ import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class TradeEntryDAO {
@@ -67,6 +69,25 @@ public class TradeEntryDAO {
         return tradeLists;
     }
 
+    public void deleteTrade(Integer tradeNo, String code) {
+        Session session = HibernateUtils.getSessionFactory().openSession();
+        Transaction transaction = null;
+        try {
+            transaction = session.beginTransaction();
+            TradeListId tradeListId = new TradeListId(tradeNo, code);
+            TradeList tradeList = session.get(TradeList.class, tradeListId);
+
+            if (tradeList != null) {
+                session.remove(tradeList);
+            }
+            transaction.commit();
+        }catch (Exception e) {
+            System.out.println(e.getMessage());
+        }finally {
+            session.close();
+        }
+    }
+
     public void deleteTrade(List<TradeEntryHelper> deletedValues) {
         Session session = HibernateUtils.getSessionFactory().openSession();
         Transaction transaction = null;
@@ -110,4 +131,22 @@ public class TradeEntryDAO {
         }
         return combo;
     }
+
+    public MinMaxBound getMinMaxValue(String code, String date) {
+        Session session = HibernateUtils.getSessionFactory().openSession();
+        String selectMinMixValue = "SELECT lowerband, upperband from stockspricelist where code='" + code +"' and dt='" + date +"';";
+        try {
+            Object[] boundsValues = (Object[]) session.createNativeQuery(selectMinMixValue).getSingleResult();
+               double min = ((Number) boundsValues[0]).doubleValue();
+               double max = ((Number) boundsValues[1]).doubleValue();
+               return new MinMaxBound(min, max);
+        }catch (Exception e) {
+            System.out.println(e.getMessage());
+        }finally {
+            session.close();
+        }
+        return null;
+    }
+
+
 }

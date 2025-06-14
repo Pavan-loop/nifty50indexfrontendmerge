@@ -20,4 +20,5 @@ module com.nichi.mergednifty50index {
     exports com.nichi.mergednifty50index.model;
     exports com.nichi.mergednifty50index.database.pavan.dao;
     exports com.nichi.mergednifty50index.database.pavan.model;
+    exports com.nichi.mergednifty50index.DTO;
 }
